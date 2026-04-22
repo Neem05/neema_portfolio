@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Portfolio</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0b1120; --surface: #111827; --card: #1a2236;
+      --accent: #38bdf8; --accent2: #818cf8;
+      --text: #e2e8f0; --muted: #94a3b8;
+      --border: rgba(255,255,255,0.08);
+      --nav-bg: #ffffff; --nav-text: #0b1120;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--nav-bg); border-bottom: 1px solid #e5e7eb;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2.5rem; height: 64px;
+      box-shadow: 0 1px 12px rgba(0,0,0,0.08);
+    }
+    .nav-name { font-family: 'DM Serif Display', serif; font-size: 1.35rem; color: var(--nav-text); letter-spacing: -0.5px; }
+    .nav-links { display: flex; gap: 0.25rem; align-items: center; }
+    .nav-links a {
+      text-decoration: none; color: var(--nav-text); font-size: 0.9rem; font-weight: 500;
+      padding: 0.45rem 0.9rem; border-radius: 6px; transition: background 0.18s, color 0.18s;
+    }
+    .nav-links a:hover, .nav-links a.active { background: var(--bg); color: var(--accent); }
+    #lockBtn {
+      background: none; border: none; cursor: pointer; color: #e5e7eb;
+      font-size: 0.7rem; padding: 0.4rem 0.3rem; border-radius: 4px;
+      transition: color 0.2s; margin-left: 0.1rem; user-select: none; line-height: 1;
+    }
+    #lockBtn:hover { color: #d1d5db; }
+    #lockBtn.active { color: #f59e0b; }
+
+    /* EDIT BANNER */
+    #editBanner {
+      display: none; background: #f59e0b; color: #0b1120;
+      text-align: center; font-size: 0.82rem; font-weight: 600;
+      padding: 0.4rem; position: sticky; top: 64px; z-index: 99;
+    }
+    body.edit-mode #editBanner { display: block; }
+
+    /* PASSWORD MODAL */
+    #pwModal {
+      display: none; position: fixed; inset: 0; z-index: 999;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center;
+    }
+    #pwModal.open { display: flex; }
+    .pw-box {
+      background: #1a2236; border: 1px solid rgba(56,189,248,0.2);
+      border-radius: 16px; padding: 2rem 2.5rem; width: 320px; text-align: center;
+    }
+    .pw-box h3 { font-family: 'DM Serif Display', serif; font-size: 1.3rem; margin-bottom: 0.4rem; }
+    .pw-box p { font-size: 0.82rem; color: var(--muted); margin-bottom: 1.2rem; }
+    .pw-box input {
+      width: 100%; background: #0b1120; border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px; color: var(--text); padding: 0.6rem 1rem;
+      font-size: 0.95rem; margin-bottom: 0.75rem; outline: none;
+    }
+    .pw-box input:focus { border-color: var(--accent); }
+    .pw-error { font-size: 0.78rem; color: #f87171; margin-bottom: 0.75rem; min-height: 1rem; }
+    .pw-actions { display: flex; gap: 0.5rem; }
+    .pw-actions button { flex: 1; padding: 0.55rem; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; border: none; }
+    #pwSubmit { background: var(--accent); color: #0b1120; }
+    #pwCancel { background: rgba(255,255,255,0.06); color: var(--text); }
+
+    /* EDIT MODE — enable contenteditable styling */
+    body.edit-mode [contenteditable="true"] { outline: none; border-bottom: 1px dashed rgba(56,189,248,0.4); cursor: text; min-width: 20px; }
+    body.edit-mode [contenteditable="true"]:focus { background: rgba(56,189,248,0.05); border-radius: 4px; }
+
+    /* Show/hide edit-only controls */
+    .edit-only { display: none !important; }
+    body.edit-mode .edit-only { display: inline-flex !important; }
+    .add-btn { display: none; }
+    body.edit-mode .add-btn { display: inline-block; }
+
+    /* HERO */
+    #bio {
+      background: linear-gradient(135deg, #0f2540 0%, #0b1120 50%, #0e1e38 100%);
+      padding: 5rem 2.5rem 4rem; position: relative; overflow: hidden;
+    }
+    #bio::before {
+      content:''; position:absolute; inset:0;
+      background: radial-gradient(ellipse at 20% 60%, rgba(56,189,248,0.08) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 30%, rgba(129,140,248,0.07) 0%, transparent 55%);
+      pointer-events:none;
+    }
+    .hero-inner { max-width: 960px; margin: 0 auto; display: flex; gap: 3.5rem; align-items: center; flex-wrap: wrap; position: relative; }
+    .avatar-wrap { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+    .avatar-ring {
+      width: 170px; height: 170px; border-radius: 50%;
+      border: 3px solid var(--accent); padding: 4px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      position: relative; overflow: hidden; transition: transform 0.3s;
+    }
+    body.edit-mode .avatar-ring { cursor: pointer; }
+    body.edit-mode .avatar-ring:hover { transform: scale(1.04); }
+    .avatar-ring img, .avatar-ring .avatar-placeholder {
+      width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+      background: var(--card); display: flex; align-items: center; justify-content: center; font-size: 3rem;
+    }
+    .avatar-ring .avatar-placeholder { display: none; }
+    .avatar-ring.empty .avatar-placeholder { display: flex; }
+    .avatar-ring.empty img { display: none; }
+    #photoInput { display: none; }
+    .upload-btn {
+      background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3);
+      color: var(--accent); padding: 0.4rem 1rem; border-radius: 6px;
+      font-size: 0.8rem; cursor: pointer; transition: background 0.2s;
+      align-items: center; gap: 0.3rem;
+    }
+    .upload-btn:hover { background: rgba(56,189,248,0.22); }
+    .hero-text { flex: 1; min-width: 260px; }
+    .hero-bio { color: #cbd5e1; font-size: 1rem; line-height: 1.75; max-width: 540px; margin-bottom: 1.5rem; }
+    .hero-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.2rem; }
+    .btn-primary {
+      background: var(--accent); color: #0b1120; border: none;
+      padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem;
+      cursor: pointer; text-decoration: none;
+      transition: opacity 0.2s, transform 0.18s;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+    }
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-outline {
+      background: transparent; border: 1px solid var(--border); color: var(--text);
+      padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 500; font-size: 0.9rem;
+      cursor: pointer; text-decoration: none; transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-outline:hover { border-color: var(--accent); background: rgba(56,189,248,0.06); }
+
+    /* SECTIONS */
+    section:not(#bio) { max-width: 960px; margin: 0 auto; padding: 4rem 2rem; }
+    .section-title { font-family: 'DM Serif Display', serif; font-size: 2rem; margin-bottom: 0.5rem; }
+    .section-divider { width: 48px; height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px; margin-bottom: 2.5rem; }
+
+    /* Cards */
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.2rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; transition: border-color 0.2s, transform 0.2s; }
+    .card:hover { border-color: rgba(56,189,248,0.35); transform: translateY(-2px); }
+    .card-tag { display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; background: rgba(56,189,248,0.12); color: var(--accent); padding: 0.2rem 0.6rem; border-radius: 4px; margin-bottom: 0.75rem; }
+    .card h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .card p { font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+    .card-links { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    .card-link { font-size: 0.78rem; font-weight: 500; color: var(--accent); text-decoration: none; border: 1px solid rgba(56,189,248,0.25); padding: 0.25rem 0.65rem; border-radius: 5px; transition: background 0.18s; }
+    .card-link:hover { background: rgba(56,189,248,0.1); }
+
+    /* Skills */
+    .skill-badge { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; font-size: 0.9rem; font-weight: 500; transition: border-color 0.2s, background 0.2s; }
+    .skill-badge:hover { border-color: var(--accent2); background: rgba(129,140,248,0.08); }
+    .skill-badge .sk-icon { font-size: 1.6rem; margin-bottom: 0.4rem; }
+    .skill-cat { margin-bottom: 2rem; }
+    .skill-cat-title { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent2); margin-bottom: 0.75rem; }
+
+    /* Certs */
+    .cert-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; display: flex; align-items: center; gap: 1rem; transition: border-color 0.2s; }
+    .cert-card:hover { border-color: rgba(56,189,248,0.35); }
+    .cert-icon { font-size: 2rem; flex-shrink: 0; }
+    .cert-body h4 { font-size: 0.95rem; font-weight: 600; }
+    .cert-body p { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
+    .cert-year { margin-left: auto; font-size: 0.8rem; color: var(--accent); font-weight: 600; flex-shrink: 0; }
+
+    /* Timeline */
+    .timeline { position: relative; padding-left: 1.5rem; }
+    .timeline::before { content:''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--border); }
+    .timeline-item { position: relative; margin-bottom: 2rem; }
+    .timeline-dot { position: absolute; left: -1.55rem; top: 0.3rem; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); }
+    .timeline-date { font-size: 0.78rem; color: var(--accent); font-weight: 600; margin-bottom: 0.25rem; }
+    .timeline-title { font-size: 1rem; font-weight: 600; }
+    .timeline-desc { font-size: 0.87rem; color: var(--muted); margin-top: 0.3rem; line-height: 1.6; }
+
+    /* Add buttons */
+    .add-btn { background: transparent; border: 1px dashed rgba(56,189,248,0.35); color: var(--accent); padding: 0.5rem 1.2rem; border-radius: 8px; font-size: 0.85rem; cursor: pointer; margin-top: 1rem; transition: background 0.2s; }
+    .add-btn:hover { background: rgba(56,189,248,0.08); }
+
+    footer { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--border); margin-top: 2rem; }
+
+    @media (max-width: 640px) {
+      nav { padding: 0 1rem; }
+      .nav-links a { padding: 0.35rem 0.55rem; font-size: 0.8rem; }
+      .hero-inner { flex-direction: column; gap: 2rem; }
+      #bio { padding: 3rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- PASSWORD MODAL -->
+<div id="pwModal">
+  <div class="pw-box">
+    <h3>🔐 Editor Access</h3>
+    <p>Enter your password to enable editing</p>
+    <input type="password" id="pwInput" placeholder="Password" onkeydown="if(event.key==='Enter')submitPw()"/>
+    <div class="pw-error" id="pwError"></div>
+    <div class="pw-actions">
+      <button id="pwCancel" onclick="closePwModal()">Cancel</button>
+      <button id="pwSubmit" onclick="submitPw()">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT BANNER -->
+<div id="editBanner">✏️ Edit Mode active — <a href="#" onclick="lockEdit();return false;" style="color:#0b1120;font-weight:700;">Lock &amp; Exit</a></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-name" id="navName">Neema Vinod</div>
+  <div class="nav-links">
+    <a href="#bio" class="active">Bio</a>
+    <a href="#projects">Projects</a>
+    <a href="#skills">Skills</a>
+    <a href="#certifications">Certifications</a>
+    <a href="#activities">Activities</a>
+    <button id="lockBtn" onclick="openPwModal()" title="">edit</button>
+  </div>
+</nav>
+
+<!-- BIO -->
+<section id="bio">
+  <div class="hero-inner">
+    <div class="avatar-wrap">
+      <div class="avatar-ring empty" id="avatarRing" onclick="maybeUpload()">
+        <div class="avatar-placeholder">🧑</div>
+        <img id="avatarImg" src="" alt="Profile Photo"/>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" onchange="handlePhoto(event)"/>
+      <button class="upload-btn edit-only" onclick="document.getElementById('photoInput').click()">📷 Change Photo</button>
+      <div style="text-align:center;margin-top:0.5rem;">
+        <div id="heroName" contenteditable="false" style="font-family:'DM Serif Display',serif;font-size:1.4rem;font-weight:700;margin-bottom:0.15rem;">Neema Vinod</div>
+        <div contenteditable="false" style="color:var(--accent);font-size:0.9rem;font-weight:600;">CSE Student</div>
+        <div contenteditable="false" style="color:var(--muted);font-size:0.85rem;margin-top:0.15rem;">Amrita Viswa Vidyapeetham</div>
+      </div>
+      <div style="display:flex;gap:0.6rem;margin-top:0.75rem;flex-wrap:wrap;justify-content:center;">
+        <a href="mailto:neemavinod@gmail.com" 
+       style="color:var(--muted);font-size:1.3rem;">
+       <i class="fas fa-envelope"></i>
+    </a>
+        <a href="https://www.linkedin.com/in/neema-vinod-56744b310/" 
+       target="_blank"
+       style="color:var(--muted);font-size:1.3rem;">
+       <i class="fab fa-linkedin"></i>
+    </a>
+          <!-- GitHub -->
+    <a href="https://github.com/Neem05" 
+       target="_blank"
+       style="color:var(--muted);font-size:1.3rem;">
+       <i class="fab fa-github"></i>
+    </a>
+      </div>
+    </div>
+    <div class="hero-text">
+      <h1 style="font-size:2rem;margin-bottom:0.5rem;">About Me</h1>
+      <p class="hero-bio" contenteditable="false">Hi, I’m Neema Vinod, a dedicated and motivated Computer Science and Engineering student with a strong interest in Artificial Intelligence, Machine Learning, and Software Development.
+
+I am skilled in Python, Java, Data Structures, and Machine Learning, and I enjoy simplifying complex problems into clear and creative solutions. I have gained practical experience through  hackathons, and certifications from CISCO and NPTEL.
+
+I am a confident communicator and a collaborative team player, demonstrated through my participation in hackathons and team projects. I am passionate about applying AI and data analytics for sustainability and social good.
+
+With a mindset of continuous learning, I aim to contribute to innovative tech teams by combining analytical thinking, creativity, and strong problem-solving skills.
+</p>
+      <div class="hero-actions">
+        <a href="resume_neema.pdf" class="btn-primary">⬇ Download CV</a>
+        <a href="#projects" class="btn-outline">View Projects →</a>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="info">
+  <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:2rem;">
+
+    <!-- Interests -->
+    <div style="flex:1;min-width:250px;">
+      <h3 style="margin-bottom:10px;">Interests</h3>
+      <ul style="line-height:1.8;">
+        <li>Artificial Intelligence</li>
+        <li>Machine Learning</li>
+        <li>Software Development</li>
+        <li>Data Analytics</li>
+        <li>Database Management Systems</li>
+      </ul>
+    </div>
+
+    <!-- Education -->
+    <div style="flex:1;min-width:250px;">
+      <h3 style="margin-bottom:10px;">Education</h3>
+
+      <div style="margin-bottom:12px;">
+        <strong>B.Tech in Computer Science and Engineering</strong><br>
+        Amrita Vishwa Vidyapeetham, Kollam
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <strong>Higher Secondary (CBSE)</strong><br>
+        Chavara Public School
+      </div>
+
+      <div>
+        <strong>Schooling (ICSE)</strong><br>
+        Alphonsa Residential School
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- PROJECTS -->
+<section id="projects">
+  <div class="section-title">Projects</div>
+  <div class="section-divider"></div>
+
+  <div class="grid-2" id="projectsGrid">
+
+    <!-- Project 1 -->
+    <div class="card">
+      <span class="card-tag">Web App</span>
+      <h3>ResQWave – Real-Time Disaster Response System</h3>
+      <p>
+        Developed a full-stack disaster response platform using React.js, Node.js, Express.js, Prisma ORM, and SQL. 
+        Enabled real-time coordination between victims, volunteers, and administrators. 
+        Integrated Socket.io for live communication, role-based workflows, and efficient request prioritization.
+      </p>
+    </div>
+
+    <!-- Project 2 -->
+    <div class="card">
+      <span class="card-tag">Machine Learning</span>
+      <h3>Deepfake Image Detection</h3>
+      <p>
+        Built a deep learning model using ResNet and Graph Attention Networks to detect fake facial images. 
+        Achieved 94.65% accuracy using PyTorch with transfer learning and graph-based feature representation.
+      </p>
+    </div>
+
+    <!-- Project 3 -->
+    <div class="card">
+      <span class="card-tag">Hackathon Project</span>
+      <h3>NASA Space Apps – Sustainable Sprouts</h3>
+      <p>
+        Collaborated in a 5-member team to develop an educational sustainability game using Sandbox Game Maker. 
+        Contributed to design, content integration, and workflow planning, securing 2nd prize at regional level.
+      </p>
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- SKILLS -->
+<section id="skills">
+  <div class="section-title">Skills</div>
+  <div class="section-divider"></div>
+
+  <!-- Technical Skills -->
+  <div class="skill-cat">
+    <div class="skill-cat-title">Languages & Frameworks</div>
+    <div class="grid-3" id="skillsGrid1">
+
+      <div class="skill-badge"><div class="sk-icon">🐍</div><div>Python</div></div>
+      <div class="skill-badge"><div class="sk-icon">☕</div><div>Java</div></div>
+      <div class="skill-badge"><div class="sk-icon">🟨</div><div>JavaScript</div></div>
+      <div class="skill-badge"><div class="sk-icon">⚛️</div><div>React.js</div></div>
+      <div class="skill-badge"><div class="sk-icon">🌐</div><div>HTML / CSS</div></div>
+      <div class="skill-badge"><div class="sk-icon">🗃️</div><div>MySQL / DBMS</div></div>
+
+    </div>
+  </div>
+
+  <!-- Data & Core -->
+  <div class="skill-cat">
+    <div class="skill-cat-title">Data & Core Skills</div>
+    <div class="grid-3">
+
+      <div class="skill-badge"><div class="sk-icon">📊</div><div>Machine Learning</div></div>
+      <div class="skill-badge"><div class="sk-icon">🐼</div><div>Pandas</div></div>
+      <div class="skill-badge"><div class="sk-icon">📈</div><div>Matplotlib</div></div>
+      <div class="skill-badge"><div class="sk-icon">🧠</div><div>Scikit-learn</div></div>
+      <div class="skill-badge"><div class="sk-icon">⚙️</div><div>Data Structures & Algorithms</div></div>
+
+    </div>
+  </div>
+
+  <!-- Tools -->
+  <div class="skill-cat">
+    <div class="skill-cat-title">Tools & Platforms</div>
+    <div class="grid-3" id="skillsGrid2">
+
+      <div class="skill-badge"><div class="sk-icon">🐙</div><div>GitHub</div></div>
+      <div class="skill-badge"><div class="sk-icon">🐳</div><div>Docker</div></div>
+      <div class="skill-badge"><div class="sk-icon">📊</div><div>Tableau (Basic)</div></div>
+
+    </div>
+  </div>
+
+</section>
+
+<!-- CERTIFICATIONS -->
+<section id="certifications">
+  <div class="section-title">Certifications</div>
+  <div class="section-divider"></div>
+
+  <div class="cert-card">
+    
+    <div class="cert-body">
+      <h4>Supervised Machine Learning: Regression and Classification</h4>
+      <p>Coursera (Stanford Online) — August 2024</p>
+    </div>
+  </div>
+
+  <div class="cert-card">
+    
+    <div class="cert-body">
+      <h4>Intro to Machine Learning</h4>
+      <p>Kaggle — August 2024</p>
+    </div>
+  </div>
+
+  <div class="cert-card">
+    
+    <div class="cert-body">
+      <h4>Deloitte Australia Virtual Experience</h4>
+      <p>Technology Job Simulation (Forage) — July 2025</p>
+    </div>
+  </div>
+
+  <div class="cert-card">
+    
+    <div class="cert-body">
+      <h4>CISCO IT Specialist - Cybersecurity</h4>
+      <p>CISCO — August 2023</p>
+    </div>
+  </div>
+</section>
+
+<!-- ACTIVITIES -->
+<section id="activities">
+  <div class="section-title">Experience & Activities</div>
+  <div class="section-divider"></div>
+
+  <div class="timeline">
+
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-date">2025</div>
+      <div class="timeline-title">Cybersecurity Awareness Program (SSR)</div>
+      <div class="timeline-desc">
+        Conducted cybersecurity awareness sessions for school students on online safety, phishing, social engineering, and cyber hygiene through interactive sessions and demonstrations.
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-date">May 2025</div>
+      <div class="timeline-title">Event Volunteer – Vidyut’25</div>
+      <div class="timeline-desc">
+        Volunteered at a national-level tech fest at Amrita Vishwa Vidyapeetham, contributing to event coordination and management.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <span>Built with ❤️ — <span id="footerName">Neema Vinod</span>'s Portfolio</span>
+</footer>
+
+<script>
+  /* ══════════════════════════════════════
+     CHANGE YOUR PASSWORD HERE ↓
+  ══════════════════════════════════════ */
+  const EDIT_PASSWORD = "mypassword123";
+  /* ══════════════════════════════════════ */
+
+  let editMode = false;
+
+  function openPwModal() {
+    if (editMode) { lockEdit(); return; }
+    document.getElementById('pwModal').classList.add('open');
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwError').textContent = '';
+    setTimeout(() => document.getElementById('pwInput').focus(), 100);
+  }
+  function closePwModal() {
+    document.getElementById('pwModal').classList.remove('open');
+  }
+  function submitPw() {
+    if (document.getElementById('pwInput').value === EDIT_PASSWORD) {
+      closePwModal();
+      enableEdit();
+    } else {
+      document.getElementById('pwError').textContent = 'Incorrect password.';
+      document.getElementById('pwInput').value = '';
+      document.getElementById('pwInput').focus();
+    }
+  }
+  function enableEdit() {
+    editMode = true;
+    document.body.classList.add('edit-mode');
+    document.getElementById('lockBtn').classList.add('active');
+    document.querySelectorAll('[contenteditable="false"]').forEach(el => el.setAttribute('contenteditable','true'));
+  }
+  function lockEdit() {
+    editMode = false;
+    document.body.classList.remove('edit-mode');
+    document.getElementById('lockBtn').classList.remove('active');
+    document.querySelectorAll('[contenteditable="true"]').forEach(el => el.setAttribute('contenteditable','false'));
+  }
+
+  function maybeUpload() { if (editMode) document.getElementById('photoInput').click(); }
+  function handlePhoto(e) {
+  const file = e.target.files[0]; 
+  if (!file) return;
+
+  const r = new FileReader();
+
+  r.onload = ev => { 
+    const img = document.getElementById('avatarImg');
+    const ring = document.getElementById('avatarRing');
+
+    img.src = ev.target.result;
+    ring.classList.remove('empty');
+
+    // ✅ SAVE IMAGE (so it stays after refresh)
+    localStorage.setItem("profilePhoto", ev.target.result);
+  };
+
+  r.readAsDataURL(file);
+}
+
+  document.getElementById('heroName').addEventListener('input', function() {
+    document.getElementById('navName').textContent = this.textContent;
+    document.getElementById('footerName').textContent = this.textContent;
+  });
+
+  function addProject() {
+    if (!editMode) return;
+    const card = document.createElement('div'); card.className = 'card';
+    card.innerHTML = `<span class="card-tag" contenteditable="true">Category</span><h3 contenteditable="true">New Project</h3><p contenteditable="true">Describe your project here.</p><div class="card-links"><a href="#" class="card-link">GitHub</a></div>`;
+    document.getElementById('projectsGrid').appendChild(card);
+  }
+  function addSkill(gridId) {
+    if (!editMode) return;
+    const badge = document.createElement('div'); badge.className = 'skill-badge';
+    badge.innerHTML = `<div class="sk-icon">⭐</div><div contenteditable="true">New Skill</div>`;
+    document.getElementById(gridId).appendChild(badge);
+  }
+  function addCert() {
+    if (!editMode) return;
+    const card = document.createElement('div'); card.className = 'cert-card';
+    card.innerHTML = `<div class="cert-icon">🏅</div><div class="cert-body"><h4 contenteditable="true">Certification Name</h4><p contenteditable="true">Issuing Organization</p></div><div class="cert-year" contenteditable="true">2025</div>`;
+    document.getElementById('certsGrid').appendChild(card);
+  }
+  function addActivity() {
+    if (!editMode) return;
+    const item = document.createElement('div'); item.className = 'timeline-item';
+    item.innerHTML = `<div class="timeline-dot"></div><div class="timeline-date" contenteditable="true">Month Year</div><div class="timeline-title" contenteditable="true">Activity Title</div><div class="timeline-desc" contenteditable="true">Describe your activity here.</div>`;
+    document.getElementById('activitiesTimeline').insertBefore(item, document.getElementById('activitiesTimeline').firstChild);
+  }
+
+  // Active nav on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  window.addEventListener('scroll', () => {
+    let cur = '';
+    sections.forEach(s => { if (window.scrollY >= s.offsetTop - 80) cur = s.id; });
+    navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + cur));
+  });
+
+  document.getElementById('pwModal').addEventListener('click', e => { if (e.target === document.getElementById('pwModal')) closePwModal(); });
+window.onload = function() {
+  const saved = localStorage.getItem("profilePhoto");
+  if (saved) {
+    document.getElementById('avatarImg').src = saved;
+    document.getElementById('avatarRing').classList.remove('empty');
+  }
+};
+</script>
+</script>
+
+</body>
+</html>
